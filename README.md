@@ -168,24 +168,8 @@ Necesitas copiar la carpeta del proyecto a la nueva máquina. **No incluyas la c
 
 ```bash
 # En la nueva máquina
-git clone https://github.com/tu-usuario/tu-proyecto.git
+git clone https://github.com/KENETGOD/RESIDENCIAS-FER-PEDRO.git
 cd tu-proyecto
-```
-
-**Método B: Comprimir y Copiar**
-
-En tu máquina actual:
-```bash
-# Ve a la carpeta padre de tu proyecto
-cd ~/
-# Crea un archivo .zip (excluyendo venv)
-zip -r RESIDENCIAS.zip RESIDENCIAS -x "RESIDENCIAS/venv/*"
-```
-
-Transfiere `RESIDENCIAS.zip` a la nueva máquina y descomprímelo:
-```bash
-unzip RESIDENCIAS.zip
-cd RESIDENCIAS
 ```
 
 **Archivos esenciales que deben estar presentes:**
@@ -221,9 +205,9 @@ Deberías ver los 4 contenedores con estado **Up**.
 
 Usa la dirección IP de la nueva máquina en lugar de `localhost`:
 
-- **Grafana**: `http://<IP_DEL_SERVIDOR>:3000`
-- **Prometheus**: `http://<IP_DEL_SERVIDOR>:9090`
-- **InfluxDB**: `http://<IP_DEL_SERVIDOR>:8086`
+- **Grafana**: `http://localhost:3000`
+- **Prometheus**: `http://localhost:9090`
+- **InfluxDB**: `http://localhost:8086`
 
 ### ⚠️ Consideración Importante: Interfaz de Red
 
@@ -256,6 +240,15 @@ Este prototipo validó la arquitectura. El proyecto final evolucionará de la si
 - **Despliegue**: La arquitectura de Docker Compose se desplegará en un servidor de producción para monitorear el servidor web en vivo.
 
 ---
+
+## Otros comandos
+```bash
+Para encender (en modo servidor): sudo docker compose up -d
+Para encender (viendo logs): sudo docker compose up
+Para apagar: sudo docker compose down
+Reconstruir (SOLO si cambias el código): sudo docker compose up --build -d
+Ver logs: sudo docker compose logs -f
+```
 
 ## 📄 Licencia
 
