@@ -1,4 +1,3 @@
-# RESIDENCIAS-FER-PEDRO
 # Sistema de Detección de Anomalías de Red (Prototipo PoC)
 
 Este repositorio contiene el código de una **Prueba de Concepto (PoC)** para un sistema de detección de anomalías en tiempo real. El objetivo principal es validar la arquitectura y la integración de un stack tecnológico moderno (Docker, TIG Stack) para el procesamiento y visualización de datos de alta frecuencia.
@@ -65,6 +64,7 @@ El uso de Docker Compose hace que el despliegue en una nueva máquina sea trivia
 ### 1. Generar el Modelo de Prueba (Paso único)
 
 Si no tienes los archivos `tu_modelo_lstm.h5` y `mi_scaler.joblib`, debes generarlos primero:
+
 ```bash
 # 1. Crear y activar un entorno virtual
 python3 -m venv venv
@@ -83,6 +83,7 @@ deactivate
 ### 2. Levantar el Stack Completo
 
 Con todos los archivos del proyecto en el directorio (incluyendo el `.h5` y `.joblib`), ejecuta:
+
 ```bash
 # Construye las imágenes y levanta los contenedores
 # -d (detached) los ejecuta en segundo plano
@@ -92,6 +93,7 @@ sudo docker compose up --build -d
 ### 3. Verificar el Estado
 
 Para asegurarte de que todos los servicios están corriendo:
+
 ```bash
 sudo docker compose ps
 ```
@@ -120,6 +122,131 @@ Una vez levantado el stack, puedes acceder a las interfaces web desde la máquin
 
 ---
 
+## 🚢 Despliegue en Otra Máquina
+
+Una de las **mayores ventajas** de usar Docker y Docker Compose es la facilidad para replicar el entorno completo en cualquier máquina. Ya no necesitas instalar Python, TensorFlow, pip ni crear entornos virtuales en la nueva máquina. Toda la complejidad está empaquetada en los archivos de configuración.
+
+### Prerrequisitos en la Nueva Máquina
+
+En la máquina de destino, **solo necesitas instalar Docker y Docker Compose**. No se requiere Python, pip, venv, TensorFlow ni ninguna de las librerías de `requirements.txt`.
+
+#### Instalación en Ubuntu/Debian:
+
+```bash
+# 1. Actualizar e instalar prerrequisitos
+sudo apt-get update
+sudo apt-get install ca-certificates curl
+
+# 2. Añadir la clave GPG oficial de Docker
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+# 3. Añadir el repositorio de Docker
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+sudo apt-get update
+
+# 4. Instalar Docker Engine y el plugin de Compose
+sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+# 5. (MUY RECOMENDADO) Añadir tu usuario al grupo docker
+sudo usermod -aG docker $USER
+```
+
+> **Importante**: Después del paso 5, cierra sesión y vuelve a iniciarla para que los permisos de Docker se apliquen correctamente.
+
+### Pasos para el Despliegue
+
+#### 1. Transferir los Archivos del Proyecto
+
+Necesitas copiar la carpeta del proyecto a la nueva máquina. **No incluyas la carpeta `venv`** (el archivo `.dockerignore` debería excluirla automáticamente).
+
+**Método A: Usando Git (Recomendado)**
+
+```bash
+# En la nueva máquina
+git clone https://github.com/tu-usuario/tu-proyecto.git
+cd tu-proyecto
+```
+
+**Método B: Comprimir y Copiar**
+
+En tu máquina actual:
+```bash
+# Ve a la carpeta padre de tu proyecto
+cd ~/
+# Crea un archivo .zip (excluyendo venv)
+zip -r RESIDENCIAS.zip RESIDENCIAS -x "RESIDENCIAS/venv/*"
+```
+
+Transfiere `RESIDENCIAS.zip` a la nueva máquina y descomprímelo:
+```bash
+unzip RESIDENCIAS.zip
+cd RESIDENCIAS
+```
+
+**Archivos esenciales que deben estar presentes:**
+- `docker-compose.yml`
+- `Dockerfile`
+- `capturador.py`
+- `requirements.txt`
+- `prometheus.yml`
+- `tu_modelo_lstm.h5`
+- `mi_scaler.joblib`
+- `.dockerignore`
+
+#### 2. Levantar el Sistema
+
+Dentro de la carpeta del proyecto en la nueva máquina:
+
+```bash
+sudo docker compose up --build -d
+```
+
+- `--build`: Construye la imagen del contenedor (importante en la primera ejecución)
+- `-d`: Ejecuta en modo detached (segundo plano), permitiendo cerrar la terminal
+
+#### 3. Verificar el Estado
+
+```bash
+sudo docker compose ps
+```
+
+Deberías ver los 4 contenedores con estado **Up**.
+
+#### 4. Acceder a los Servicios
+
+Usa la dirección IP de la nueva máquina en lugar de `localhost`:
+
+- **Grafana**: `http://<IP_DEL_SERVIDOR>:3000`
+- **Prometheus**: `http://<IP_DEL_SERVIDOR>:9090`
+- **InfluxDB**: `http://<IP_DEL_SERVIDOR>:8086`
+
+### ⚠️ Consideración Importante: Interfaz de Red
+
+El script `capturador.py` está configurado para capturar tráfico de red. La nueva máquina podría tener un nombre de interfaz diferente (ej. `eth0`, `ens33`, en lugar de `enp5s0`).
+
+**Solución Recomendada**: Asegúrate de que `capturador.py` no especifique ninguna interfaz:
+
+```python
+if __name__ == '__main__':
+    start_http_server(8000)
+    print("[*] Servidor de Prometheus iniciado en http://localhost:8000")
+    start_sniffing()  # Sin interfaz especificada - portabilidad automática
+```
+
+Cuando Scapy se ejecuta sin especificar interfaz, detecta automáticamente la ruta por defecto.
+
+**Solución Manual** (si es necesario):
+1. Ejecuta `ip a` en la nueva máquina para identificar la interfaz principal
+2. Edita `capturador.py` y especifica la interfaz en `start_sniffing()`
+3. Ejecuta `sudo docker compose up --build -d` para aplicar los cambios
+
+---
+
 ## 🔮 Próximos Pasos (Visión del Proyecto Final)
 
 Este prototipo validó la arquitectura. El proyecto final evolucionará de la siguiente manera:
@@ -131,8 +258,6 @@ Este prototipo validó la arquitectura. El proyecto final evolucionará de la si
 ---
 
 ## 📄 Licencia
+
 Instituto Tecnologico de Morelia
 
-## 👥 Contribuciones
-
-Las contribuciones son bienvenidas. Por favor, abre un issue o pull request para sugerencias o mejoras.
