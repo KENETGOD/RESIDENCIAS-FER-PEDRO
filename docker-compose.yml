@@ -23,7 +23,7 @@ services:
       - "9090:9090"
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
-    extra_hosts: # <--- ¡AÑADE ESTE BLOQUE!
+    extra_hosts: 
       - "host.docker.internal:host-gateway"
 
   grafana:
@@ -34,6 +34,8 @@ services:
     depends_on:
       - prometheus
       - influxdb
+    volumes:
+      - grafana_data:/var/lib/grafana 
 
   capturador:
     build: . # Busca un Dockerfile en la carpeta actual
@@ -53,4 +55,5 @@ services:
       - influxdb
 
 volumes:
-  influxdb_data:
+  influxdb_data: {}
+  grafana_data: {}
