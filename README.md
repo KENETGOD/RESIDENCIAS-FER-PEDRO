@@ -20,3 +20,18 @@ sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin 
 
 ## 5. (MUY RECOMENDADO) Añadir tu usuario al grupo docker
 sudo usermod -aG docker $USER
+
+# Levanta el Sistema
+sudo docker compose up --build -d
+
+# Verifica que Funciona
+sudo docker compose ps
+
+# Accede a los Servicios
+Grafana: http://<IP_DEL_SERVIDOR>:3000
+Prometheus: http://<IP_DEL_SERVIDOR>:9090
+InfluxDB: http://<IP_DEL_SERVIDOR>:8086
+
+# La Interfaz de Red
+Hay una cosa que podría necesitar un pequeño ajuste.
+Tu script capturador.py está configurado para escuchar el tráfico. En tus logs anteriores, vi que detectó la interfaz enp5s0.
