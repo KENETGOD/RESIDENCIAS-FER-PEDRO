@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  influxdb:
+    image: influxdb:2.7
+    container_name: influxdb
+    ports:
+      - "8086:8086"
+    volumes:
+      - influxdb_data:/var/lib/influxdb2
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=my-user
+      - DOCKER_INFLUXDB_INIT_PASSWORD=my-super-password
+      - DOCKER_INFLUXDB_INIT_ORG=my-org
+      - DOCKER_INFLUXDB_INIT_BUCKET=network_traffic
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=my-super-secret-token
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    extra_hosts: # <--- ¡AÑADE ESTE BLOQUE!
+      - "host.docker.internal:host-gateway"
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+      - influxdb
+
+  capturador:
+    build: . # Busca un Dockerfile en la carpeta actual
+    container_name: capturador
+    network_mode: "host" # Esencial para que scapy pueda ver el tráfico de la red
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    volumes:
+      - ./:/app # Monta tu código en el contenedor para que los cambios se reflejen
+    environment:
+      - INFLUXDB_URL=http://localhost:8086 # Como usa network_mode host, debe usar localhost
+      - INFLUXDB_TOKEN=my-super-secret-token
+      - INFLUXDB_ORG=my-org
+      - INFLUXDB_BUCKET=network_traffic
+    depends_on:
+      - influxdb
+
+volumes:
+  influxdb_data:
