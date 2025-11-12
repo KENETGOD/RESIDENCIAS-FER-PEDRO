@@ -1,37 +1,18 @@
 # RESIDENCIAS-FER-PEDRO
-## 1. Actualizar e instalar prerrequisitos
-sudo apt-get update
-sudo apt-get install ca-certificates curl
+Sistema de Detección de Anomalías de Red (Prototipo PoC)Este repositorio contiene el código de una Prueba de Concepto (PoC) para un sistema de detección de anomalías en tiempo real. El objetivo principal es validar la arquitectura y la integración de un stack tecnológico moderno (Docker, TIG Stack) para el procesamiento y visualización de datos de alta frecuencia.⚠️ ¡Importante! Propósito de esta Prueba de ConceptoEste proyecto NO es un sistema de detección de intrusos listo para producción. Su propósito fue estrictamente técnico:Validar las Herramientas: Probar la viabilidad de usar Docker, Prometheus, InfluxDB y Grafana juntos.Validar el Pipeline de Datos: Asegurar que un script de Python puede capturar datos, procesarlos con un modelo de Keras y enviarlos a dos bases de datos (de métricas y de series temporales) en paralelo.Probar el Despliegue: Demostrar la facilidad de despliegue y replicación del entorno completo usando Docker Compose.El modelo de Deep Learning (tu_modelo_lstm.h5) es un placeholder entrenado con datos aleatorios (generador_modelo_prueba.py) solo para validar el flujo de inferencia.🏛️ Arquitectura del Sistema (PoC)El prototipo implementa un flujo de datos de doble vía para métricas en tiempo real y almacenamiento histórico.Captura: Un contenedor capturador con Python y Scapy escucha el tráfico de red del host.Procesamiento: Cada paquete es analizado, sus características son extraídas y preprocesadas (usando mi_scaler.joblib), y se calcula un score de anomalía (Error de Reconstrucción del Autoencoder) usando el modelo de Keras (tu_modelo_lstm.h5).Almacenamiento (Vía 1 - Tiempo Real): El script expone métricas instantáneas (ej. anomalia_de_red_score) en un endpoint (:8000). Prometheus recolecta (scrapes) estas métricas periódicamente.Almacenamiento (Vía 2 - Histórico): Los datos detallados de cada paquete (IPs, puertos, score) se escriben en InfluxDB para análisis a largo plazo.Visualización: Grafana se conecta a ambas fuentes de datos (Prometheus y InfluxDB) para mostrarlas en un dashboard unificado.🚀 Stack TecnológicoOrquestación: Docker & Docker ComposeCaptura y Modelo (Servicio capturador):Python 3.12Scapy: Para la captura de paquetes de red.TensorFlow / Keras: Para cargar y ejecutar el modelo de inferencia.Scikit-Learn: Para cargar el scaler de preprocesamiento.Pandas / Numpy: Para la manipulación de datos.Base de Datos (Series Temporales): InfluxDB 2.xMonitoreo y Métricas: PrometheusVisualización: Grafana🔧 Guía de Despliegue RápidoEl uso de Docker Compose hace que el despliegue en una nueva máquina sea trivial, siempre que los archivos del modelo ya existan.PrerrequisitosDockerDocker Compose (Versión 2, el comando es docker compose)Sistema operativo Linux (para network_mode: "host")1. Generar el Modelo de Prueba (Paso único)Si no tienes los archivos tu_modelo_lstm.h5 y mi_scaler.joblib, debes generarlos primero:# 1. Crear y activar un entorno virtual
+python3 -m venv venv
+source venv/bin/activate
 
-## 2. Añadir la clave GPG oficial de Docker
-sudo install -m 0755 -d /etc/apt/keyrings
-sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
-sudo chmod a+r /etc/apt/keyrings/docker.asc
+# 2. Instalar dependencias locales
+pip install -r requirements.txt
 
-## 3. Añadir el repositorio de Docker
-echo \
-  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
-  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
-  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-sudo apt-get update
+# 3. Ejecutar el script generador
+python generador_modelo_prueba.py
 
-## 4. Instalar Docker Engine y el plugin de Compose
-sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-
-## 5. (MUY RECOMENDADO) Añadir tu usuario al grupo docker
-sudo usermod -aG docker $USER
-
-# Levanta el Sistema
+# 4. Desactivar el entorno (opcional)
+deactivate
+2. Levantar el Stack CompletoCon todos los archivos del proyecto en el directorio (incluyendo el .h5 y .joblib), ejecuta:# Construye las imágenes y levanta los contenedores
+# -d (detached) los ejecuta en segundo plano
 sudo docker compose up --build -d
-
-# Verifica que Funciona
-sudo docker compose ps
-
-# Accede a los Servicios
-Grafana: http://<IP_DEL_SERVIDOR>:3000
-Prometheus: http://<IP_DEL_SERVIDOR>:9090
-InfluxDB: http://<IP_DEL_SERVIDOR>:8086
-
-# La Interfaz de Red
-Hay una cosa que podría necesitar un pequeño ajuste.
-Tu script capturador.py está configurado para escuchar el tráfico. En tus logs anteriores, vi que detectó la interfaz enp5s0.
+3. Verificar el EstadoPara asegurarte de que todos los servicios están corriendo:sudo docker compose ps
+Deberías ver los 4 contenedores (capturador, grafana, influxdb, prometheus) con el estado Up.🖥️ Acceso a los ServiciosUna vez levantado el stack, puedes acceder a las interfaces web desde la máquina host:Grafana (Visualización):URL: http://localhost:3000User: adminPass: admin (te pedirá cambiarla)Prometheus (Métricas):URL: http://localhost:9090Para ver el estado del capturador: Status -> TargetsInfluxDB (Base de Datos):URL: http://localhost:8086User: my-userPass: my-super-password🔮 Próximos Pasos (Visión del Proyecto Final)Este prototipo validó la arquitectura. El proyecto final evolucionará de la siguiente manera:Fuente de Datos: Se reemplazará Scapy por un sistema de ingesta de logs de servidor web (ej. Nginx, Apache).Modelo Especializado: Se entrenará un nuevo modelo con un dataset especializado en la detección de patrones de ataque en logs web (ej. Inyección SQL, XSS, Scaneo de directorios).Despliegue: La arquitectura de Docker Compose se desplegará en un servidor de producción para monitorear el servidor web en vivo.
