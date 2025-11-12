@@ -108,7 +108,6 @@ def packet_handler(paquete):
             df = pd.DataFrame([features])
             datos_preprocesados = preprocesar_paquete(df)
 
-            # --- ¡AQUÍ ESTÁ LA CORRECCIÓN! ---
             # 1. Realizar la predicción (el autoencoder reconstruye la entrada)
             prediccion = modelo.predict(datos_preprocesados, verbose=0)
             
@@ -146,7 +145,5 @@ def start_sniffing(interfaz='enp5s0'):
 if __name__ == '__main__':
     start_http_server(8000)
     print("[*] Servidor de Prometheus iniciado en http://localhost:8000")
-    # Lo iniciamos sin interfaz específica para que Scapy elija la mejor
-    # O puedes forzar la tuya: start_sniffing(interfaz='enp5s0')
     start_sniffing()
 
